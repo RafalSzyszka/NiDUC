@@ -28,7 +28,7 @@ binary = [bin(character) for character in binary]	#do binarnych
 
 #po skonczeniu wszystkiego mozna wyeksportowac znowu do wav'a
 print("Converting to bytes...")
-binary = [int(element ,2) for element in binary] #wrocic do calkowitych trzeba
+binary = [int(element ,2) for element in binary] #trzeba wrocic do calkowitych
 binary = array.array('B',binary).tostring()	#bo tutaj drugi argument musi zawierac integery bo w output_wave argument frames musi byc stringiem!
 
 #jak ktos wpadnie na cos bardziej optymalnego to smialo zmiencie tutaj! : )
