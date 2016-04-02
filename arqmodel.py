@@ -1,13 +1,34 @@
+
+#Klasa ARQModel ma na celu wczytanie pliku wejsciowego .wav
+#nastepnie wczytanie kolejnych jego bajtow i przedstawienie ich w formie 0 i 1 
+#zamiast '\xXX' np.: '\xaa' = '10101010'
+#model dzieli na paczki po n=1,2,4,8,16,32,64,128 bajtów 
+#(najczytelniej jest n=8, n=32 powinno byc optymalne do testow)
+#model dodaje rowniez bit parzystosci jako n+1 element paczki 
+#i bajt ktory zawiera informacje o ilosci jedynek w pakiecie
+#bajt ilosci jedynek jest w paczce jako n+2 element
+#przykladowa paczka dla n=8: 
+#['10110101', '10111111', '00000000', '10010001', '10100101', '10010100', '11111111', '10110001', 1, 34]
+#indeksy 	[0:n-1] 	to miejsce danych
+#indeks 	n 			to bit parzystosci
+#indeks 	n + 1 		to ilosc jedynek w pakiecie danych
+#rozmiar paczki to n+2
+#
+#rozmiar pliku wave.wav z gita to dokladnie 6 000 000(+- 1) bajtow! 
+#wiec mozna dzielic na paczki po 1,2,4,8,16,32,64,128 bajtow (choc 128 jest ryzykowne)
+
+
+
 from __future__ import print_function
 import wave
 import array
 
 class ARQModel:
 	
-	bin_file = []
-	rate = 32000
-	packages = []
-	bytesinpack = 0
+	bin_file = []	#bajty pliku .wav
+	rate = 32000	#rating pliku .wav
+	packages = []	#bin_file podzielony na paczki
+	bytesinpack = 0	#po ile bajtow dany byly pakowane
 	
 	def __init__(self, filepath):		#konstruktor modulu arq, wczytuje plik i konwertuje go na ciag bajtow!
 		print("Reading file...")
