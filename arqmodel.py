@@ -2,7 +2,7 @@
 #Klasa ARQModel ma na celu wczytanie pliku wejsciowego .wav
 #nastepnie wczytanie kolejnych jego bajtow i przedstawienie ich w formie 0 i 1 
 #zamiast '\xXX' np.: '\xaa' = '10101010'
-#model dzieli na paczki po n=1,2,4,8,16,32,64,128 bajtów 
+#model dzieli na paczki po n=1,2,4,8,16,32,64,128 bajtow 
 #(najczytelniej jest n=8, n=32 powinno byc optymalne do testow)
 #model dodaje rowniez bit parzystosci jako n+1 element paczki 
 #i bajt ktory zawiera informacje o ilosci jedynek w pakiecie
@@ -30,7 +30,13 @@ class ARQModel:
 	packages = []	#bin_file podzielony na paczki
 	bytesinpack = 0	#po ile bajtow dany byly pakowane
 	
-	def __init__(self, filepath):		#konstruktor modulu arq, wczytuje plik i konwertuje go na ciag bajtow!
+	def __init__(self):		#konstruktor modulu arq, wczytuje plik i konwertuje go na ciag bajtow!
+		self.rate = 32000
+		self.bin_file = []
+		self.packages = []
+		self.bytesinpack = 0
+		
+	def loadfile(self, filepath):
 		print("Reading file...")
 		tmpw = wave.open(filepath, "rb")	
 		bytes = tmpw.readframes(tmpw.getnframes())
@@ -80,9 +86,56 @@ class ARQModel:
 				pack.append(0)
 				pack.append(onesinpackage)
 			onesinpackage = 0
+	
+	def unpack(self):
+		for pack in self.packages:	#dla kazdego pakietu w otrzymanej paczce
+			self.bin_file.extend(pack)	#wyciag z paczki i dodaj do 'pliku'
+	
+	def receivepacks(self, pack): #odbiera JEDEN pakiet danych i sprawdza jego poprawnosc
+		onesinpackage = 0
+		evenbit = 0
+		packones = pack.pop()	#ilosc jedynek w pakiecie
+		packeven = pack.pop()	#bit parzystosci
+		
+		for byte in pack:	#sprawdzanie bajtow DANYCH
+			for bit in byte:	#sprawdzanie kazdego bitu w kazdym bajcie	
+				if(bit == '1'):
+					onesinpackage += 1
+		
+		#sprawdzenie poprawnosci pakietu
+		if(onesinpackage == packones):	#sprawdzenie ilosci jedynek w pakiecie
+			if(onesinpackage%2 == 0):	#sprawdzenie bitu parzystosci
+				if(1 == packeven):
+					self.packages.append(pack)
+					return 'ack'
+				else:
+					return 'nack'
+			else:
+				if(0 == packeven):
+					self.packages.append(pack)
+					return 'ack'
+				else:
+					return 'nack'
+		else:
+			return 'nack'
 			
 			
-arq = ARQModel("wave.wav")
-arq.packsofn(8)
-arq.addevenbyte()
-print(arq.packages[512:612])
+arq = ARQModel()	#nowy koder arq
+arq.loadfile("wave.wav")	#zaladowanie pliku do kodera
+print("Packing...")
+arq.packsofn(32)		#pakowanie po 32 bajty na paczke
+print("Adding secure bytes...")
+arq.addevenbyte()		#dodanie bitow poprawnosci
+
+arqreceiver = ARQModel()	#nowy dekoder arq
+arqreceiver.bytesinpack = arq.bytesinpack
+#przeslanie pakietow z kodera do dekodera
+print("Sending packages...")
+for pack in arq.packages:	#dla kazdego pakietu w paczce pakietow
+	arqreceiver.receivepacks(pack)
+
+print("Unpacking...")
+arqreceiver.unpack()
+arqreceiver.converttowave('received.wav')
+
+
