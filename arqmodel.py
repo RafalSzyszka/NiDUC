@@ -29,19 +29,21 @@ class ARQModel:
 	rate = 32000	#rating pliku .wav
 	packages = []	#bin_file podzielony na paczki
 	bytesinpack = 0	#po ile bajtow dany byly pakowane
+	errors = 0
 	
 	def __init__(self):		#konstruktor modulu arq, wczytuje plik i konwertuje go na ciag bajtow!
 		self.rate = 32000
 		self.bin_file = []
 		self.packages = []
 		self.bytesinpack = 0
+		errors = 0
 		
 	def loadfile(self, filepath):
-		print("Reading file...")
+		print("\n<ARQ> Reading file...")
 		tmpw = wave.open(filepath, "rb")	
 		bytes = tmpw.readframes(tmpw.getnframes())
 		tmpw.close()
-		print("Converting to bytes...")
+		print("\n<ARQ> Converting to bytes...")
 		self.bin_file = [ord(char) for char in bytes]
 		self.bin_file = [bin(char)[2:].zfill(8) for char in self.bin_file]	#wynikowa lista bajtow w reprezentacji zer i jedynek
 		
@@ -50,7 +52,7 @@ class ARQModel:
 			print(self.bin_file[i], end= " ")
 			
 	def converttowave(self, output):	#tworzy plik wav z ciagu bajtow
-		print("Converting to wav...")
+		print("\n<ARQ> Converting to bytes...")
 		self.bin_file = [int(bit, 2) for bit in self.bin_file]	#do integerow
 		self.bin_file = array.array('B', self.bin_file).tostring() #do bajtow w postaci '\xdd'
 		self.output_wave(output, self.bin_file)
@@ -58,7 +60,7 @@ class ARQModel:
 	def output_wave(self, path, frames):
 		output = wave.open(path,'w')	#tylko do zapisu
 		output.setparams((2,2,self.rate,0,'NONE','not compressed'))		#2 kanaly, szerokosc? probki, rating, kompresja
-		print("Saving file...")
+		print("\n<ARQ> Exporting to .wav...")
 		output.writeframes(frames)
 		output.close()
 		
@@ -88,6 +90,7 @@ class ARQModel:
 			onesinpackage = 0
 	
 	def unpack(self):
+		print("\n<ARQ> Unpacking...")
 		for pack in self.packages:	#dla kazdego pakietu w otrzymanej paczce
 			self.bin_file.extend(pack)	#wyciag z paczki i dodaj do 'pliku'
 	
@@ -118,24 +121,42 @@ class ARQModel:
 					return 'nack'
 		else:
 			return 'nack'
-			
-			
-arq = ARQModel()	#nowy koder arq
-arq.loadfile("wave.wav")	#zaladowanie pliku do kodera
-print("Packing...")
-arq.packsofn(32)		#pakowanie po 32 bajty na paczke
-print("Adding secure bytes...")
-arq.addevenbyte()		#dodanie bitow poprawnosci
+	
+	def sendpacksviaSAW(self, destARQ, n):		#wysylanie pliku w paczkach po n bajtow do docelowego dekodera destARQ
+		self.synchronizeARQs(destARQ, n)		#synchronizacja modulow (ustawienie ilosci bajtow w paczkach)
+		
+		print("\n<ARQ> Packing...")
+		self.packsofn(n) 	#packowanie danych
+		
+		print("\n<ARQ> Adding secure bytes...")
+		self.addevenbyte()	#dodanie bitow sprawdzajacych poprawnosc
+		
+		print("\n<ARQ> Sending packages...")
+		for pack in self.packages:
+			ack = destARQ.receivepacks(pack)	#proba wyslania paczki/ czekanie na odpowiedz destARQ
+			while(ack == 'nack'):		#dopoki paczka nie jest odebrana poprawnie, bedzie wysylana do skutku
+				ack = destARQ.receivepacks(pack)	#wysylanie do skutku
+				self.errors += 1
+					
+	def synchronizeARQs(self, destARQ, bytesinpack):
+		destARQ.bytesinpack = bytesinpack
+		self.bytesinpack = bytesinpack
 
-arqreceiver = ARQModel()	#nowy dekoder arq
-arqreceiver.bytesinpack = arq.bytesinpack
-#przeslanie pakietow z kodera do dekodera
-print("Sending packages...")
-for pack in arq.packages:	#dla kazdego pakietu w paczce pakietow
-	arqreceiver.receivepacks(pack)
-
-print("Unpacking...")
-arqreceiver.unpack()
-arqreceiver.converttowave('received.wav')
 
 
+#-----------------------SYMULACJA-----------------------#
+
+print("\n#-----------------------SYMULACJA-----------------------#\n")
+#inicjalizacja dekoderow ARQ		
+sourceARQ = ARQModel()	#zrodlowy ARQ
+destARQ = ARQModel()	#docelowy ARQ
+	
+sourceARQ.loadfile('wave.wav')	#wczytanie pliku do wykonania symulacji
+
+sourceARQ.sendpacksviaSAW(destARQ, 32)	#wysylanie (symulacja) pliku do destARQ w paczkach po 32 bajty
+print("\n<ARQ> File sended.\tErrors: ", sourceARQ.errors)		#wypisanie ilosci blednie odebranych paczek
+
+destARQ.unpack()	#rozpakowanie otrzymanych danych
+destARQ.converttowave('receivedviaSAW.wav')		#utworzenie pliku wynikowego
+
+print("\n\n#--------------------KONIEC SYMULACJI-------------------#\n")
