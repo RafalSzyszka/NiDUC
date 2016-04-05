@@ -22,6 +22,7 @@
 from __future__ import print_function
 import wave
 import array
+import random
 
 class ARQModel:
 	
@@ -53,6 +54,7 @@ class ARQModel:
 			
 	def converttowave(self, output):	#tworzy plik wav z ciagu bajtow
 		print("\n<ARQ> Converting to bytes...")
+		
 		self.bin_file = [int(bit, 2) for bit in self.bin_file]	#do integerow
 		self.bin_file = array.array('B', self.bin_file).tostring() #do bajtow w postaci '\xdd'
 		self.output_wave(output, self.bin_file)
@@ -77,17 +79,22 @@ class ARQModel:
 	def addevenbyte(self):	#dodawanie bitu parzystosci i ilosci jedynek do kazdej paczki
 		onesinpackage = 0	#dodanie 1 jesli ilosc jedynek w paczce jest parzysta, 0 wpp
 		for pack in self.packages:
-			for byte in pack:
+			pack = self.countones(pack)
+	
+	def countones(self, pack):
+		onesinpackage = 0
+		for byte in pack:
 				for char in byte:
 					if(char == '1'):
 						onesinpackage += 1
-			if(onesinpackage % 2 == 0):
-				pack.append(1)
-				pack.append(onesinpackage)
-			else:
-				pack.append(0)
-				pack.append(onesinpackage)
-			onesinpackage = 0
+		if(onesinpackage % 2 == 0):
+			pack.append(1)
+			pack.append(onesinpackage)
+		else:
+			pack.append(0)
+			pack.append(onesinpackage)
+
+		return pack
 	
 	def unpack(self):
 		print("\n<ARQ> Unpacking...")
@@ -97,10 +104,11 @@ class ARQModel:
 	def receivepacks(self, pack): #odbiera JEDEN pakiet danych i sprawdza jego poprawnosc
 		onesinpackage = 0
 		evenbit = 0
-		packones = pack.pop()	#ilosc jedynek w pakiecie
-		packeven = pack.pop()	#bit parzystosci
+		tocheck = [el for el in pack]
+		packones = tocheck.pop()	#ilosc jedynek w pakiecie
+		packeven = tocheck.pop()	#bit parzystosci
 		
-		for byte in pack:	#sprawdzanie bajtow DANYCH
+		for byte in tocheck:	#sprawdzanie bajtow DANYCH
 			for bit in byte:	#sprawdzanie kazdego bitu w kazdym bajcie	
 				if(bit == '1'):
 					onesinpackage += 1
@@ -108,13 +116,17 @@ class ARQModel:
 		#sprawdzenie poprawnosci pakietu
 		if(onesinpackage == packones):	#sprawdzenie ilosci jedynek w pakiecie
 			if(onesinpackage%2 == 0):	#sprawdzenie bitu parzystosci
-				if(1 == packeven):
+				if(1 == packeven):	#jesli sie zgadza przyjmij paczke bez bitow ochronnych
+					pack.pop()
+					pack.pop()
 					self.packages.append(pack)
-					return 'ack'
+					return 'ack'	#odeslij potwierdzenie odebrania
 				else:
-					return 'nack'
+					return 'nack'	#pakiet nie byl poprawny, nadaj jeszcze raz
 			else:
-				if(0 == packeven):
+				if(0 == packeven):	#to samo!
+					pack.pop()
+					pack.pop()
 					self.packages.append(pack)
 					return 'ack'
 				else:
@@ -122,7 +134,7 @@ class ARQModel:
 		else:
 			return 'nack'
 	
-	def sendpacksviaSAW(self, destARQ, n):		#wysylanie pliku w paczkach po n bajtow do docelowego dekodera destARQ
+	def sendviaSAW(self, destARQ, n):		#wysylanie pliku w paczkach po n bajtow do docelowego dekodera destARQ
 		self.synchronizeARQs(destARQ, n)		#synchronizacja modulow (ustawienie ilosci bajtow w paczkach)
 		
 		print("\n<ARQ> Packing...")
@@ -132,18 +144,60 @@ class ARQModel:
 		self.addevenbyte()	#dodanie bitow sprawdzajacych poprawnosc
 		
 		print("\n<ARQ> Sending packages...")
-		for pack in self.packages:
-			ack = destARQ.receivepacks(pack)	#proba wyslania paczki/ czekanie na odpowiedz destARQ
+		for pack in self.packages: 
+			ack = destARQ.receivepacks(self.addnoise(pack))	#proba wyslania paczki/ czekanie na odpowiedz destARQ
 			while(ack == 'nack'):		#dopoki paczka nie jest odebrana poprawnie, bedzie wysylana do skutku
-				ack = destARQ.receivepacks(pack)	#wysylanie do skutku
+				ack = destARQ.receivepacks(self.addnoise(pack))	#wysylanie do skutku
 				self.errors += 1
-					
-	def synchronizeARQs(self, destARQ, bytesinpack):
+
+	#def sendviaGOBACK(self, destARQ, bytesinpack, packsinwindow):
+		#synchronizeARQs(destARQ, bytesinpack)
+				
+	def synchronizeARQs(self, destARQ, bytesinpack):	#synchronizuje moduly arq
 		destARQ.bytesinpack = bytesinpack
 		self.bytesinpack = bytesinpack
 
-
-
+	def addnoise(self, pack):	#prymitywne zaszumienie pakietu
+		grain = random.randint(0,1000)	#losowa liczba z przedzialu 0, 1000
+		noise = [el for el in pack]		#przekopiowanie pakietu zeby nie ulegla zniszczeniu
+		ones = noise.pop()		#pozbywamy sie bitow ochronnych
+		even = noise.pop()
+		string = ''
+		if(grain % 432 == 0):	#jesli wylosowana liczba jest podzielna przez 432 to pakiet bedzie zaszumiany
+			for byte in noise:
+				for bit in byte:
+					if(random.randint(1,20) == 3):	#okolo 5%szans ze dany bit zostanie zmieniony
+						if(bit == '1'):
+							string += '0'
+						else:
+							string += '1'
+					else:
+						string += bit
+			noise = self.convertbitstringtopack(string)	#konwersja otrzymanego zaszumianego pakietu na paczke
+			if(random.randint(1,20) == 4):	#okolo 5%szans ze bity sprawdzajace poprawnosc zostana znieksztalcone
+				even = random.randint(0,1)
+				ones = random.randint(0, (8*self.bytesinpack))
+			noise.append(even)	
+			noise.append(ones)	
+			return noise	#zwrocenie zaszumianej probki
+		else:
+			return pack #czysta probka
+		
+		
+	def convertbitstringtopack(self, string):	#konwertuje napis '01010001...11100' na paczke po n bajtow
+		pack = []
+		tmp = ''
+		for i in range(0, len(string)):
+			if(i % 8 == 0 and i != 0):
+				pack.append(tmp)
+				tmp = ''
+			tmp += string[i]
+			
+			if(i == len(string)-1):
+				pack.append(tmp)
+		
+		return pack
+			
 #-----------------------SYMULACJA-----------------------#
 
 print("\n#-----------------------SYMULACJA-----------------------#\n")
@@ -153,8 +207,8 @@ destARQ = ARQModel()	#docelowy ARQ
 	
 sourceARQ.loadfile('wave.wav')	#wczytanie pliku do wykonania symulacji
 
-sourceARQ.sendpacksviaSAW(destARQ, 32)	#wysylanie (symulacja) pliku do destARQ w paczkach po 32 bajty
-print("\n<ARQ> File sended.\tErrors: ", sourceARQ.errors)		#wypisanie ilosci blednie odebranych paczek
+sourceARQ.sendviaSAW(destARQ, 64)	#wysylanie (symulacja) pliku do destARQ w paczkach po 32 bajty
+print("\n<ARQ> File sended.\tErrors: ", sourceARQ.errors, "/", len(sourceARQ.packages))		#wypisanie ilosci blednie odebranych paczek
 
 destARQ.unpack()	#rozpakowanie otrzymanych danych
 destARQ.converttowave('receivedviaSAW.wav')		#utworzenie pliku wynikowego
