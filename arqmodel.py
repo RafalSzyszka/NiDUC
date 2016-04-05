@@ -209,7 +209,15 @@ destARQ = ARQModel()	#docelowy ARQ
 sourceARQ.loadfile('wave.wav')	#wczytanie pliku do wykonania symulacji
 
 sourceARQ.sendviaSAW(destARQ, 64)	#wysylanie (symulacja) pliku do destARQ w paczkach po 32 bajty
-print("\n<ARQ> File sended.\tErrors: ", sourceARQ.errors, "/", len(sourceARQ.packages))		#wypisanie ilosci blednie odebranych paczek
+
+er = sourceARQ.errors
+all = len(sourceARQ.packages)
+all += 0.0 #na float
+percent = str((er/all) * 100)
+percent += "%"
+
+
+print("\n<ARQ> File sended.\tErrors: ", sourceARQ.errors, "/", len(sourceARQ.packages), "\t" + percent)		#wypisanie ilosci blednie odebranych paczek
 
 destARQ.unpack()	#rozpakowanie otrzymanych danych
 destARQ.converttowave('receivedviaSAW.wav')		#utworzenie pliku wynikowego
