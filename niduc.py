@@ -3,20 +3,36 @@ from arqmodel import ARQModel
 from sawProtocol import SAWProtocol
 from noise import NoiseGenerator
 
-rfp = 1000		#if rand(0, rfp) % pfp == 0
-rfb = 100			#if rand(0, rfb) % pfb == 0
-rfs = 100			#if rand(0, rfs) % pfs == 0
-pfp = 200			#~2% na paczke
-pfb = 33			#~3% na bit
-pfs = 33			#~3% na bity kontrolne
+def printProgramParams():
+	print("\n\t###################-PARAMETRY PROGRAMU-###################")
+	print("\t#--rfp = "+str(rfp)+"\tZakres losowania liczb dla pakietu-------#")
+	print("\t#--rfb = "+str(rfb)+"\tZakres losowania liczb dla bitu----------#")
+	print("\t#--rfs = "+str(rfs)+"\tZakres losowania liczb dla bitow CRC-----#")
+	print("\t#--pfp = "+str(pfp)+"\tDeterminuje P(zaklocenie pakietu)--------#")
+	print("\t#--pfb = "+str(pfb)+"\tDeterminuje P(zaklocenie bitu)-----------#")
+	print("\t#--pfs = "+str(pfs)+"\tDeterminuje P(zaklocenie bitu CRC)-------#")
+	print("\t#--bytes = "+str(bytes)+"\tIlosc bajtow w pakietach-----------------#")
+	print("\t##########################################################\n\n")
 
-bytes = 150		#ilosc bajtow w paczce
-errors = 0			#ilosc bledow podczas transmisji
-packages = 0		#ilosc przesylanych pakietow
-percent = 0		#procent bledow
-
+#--------------------------------PARAMETRY PROGRAMU--------------------------------#
+#-------------------------PARAMETRY GENERATORA SZUMOW-------------------------#
+rfp = 1000		#if rand(0, rfp) % pfp == 0														#
+rfb = 100			#if rand(0, rfb) % pfb == 0														#
+rfs = 100			#if rand(0, rfs) % pfs == 0															#
+pfp = 200			#~2% na paczke																		#
+pfb = 10			#~10% na bit																				#
+pfs = 20			#~5% na bity kontrolne																#
+#-------------------------------------POZOSTALE-----------------------------------------#																														#
+bytes = 64		#ilosc bajtow w paczce																#
+errors = 0			#ilosc bledow podczas transmisji													#		
+packages = 0		#ilosc przesylanych pakietow														#
+percent = 0		#procent bledow																		#
+#--------------------------------PARAMETRY PROGRAMU--------------------------------#
 
 print("\n#-----------------------SYMULACJA-----------------------#\n")
+
+printProgramParams()
+
 #inicjalizacja dekoderow ARQ		
 sourceARQ = ARQModel()	#zrodlowy ARQ
 destARQ = ARQModel()	#docelowy ARQ
