@@ -1,6 +1,6 @@
 from __future__ import print_function
 from arqmodel import ARQModel
-from sawProtocol import SAWProtocol
+from protocols import *
 from noise import NoiseGenerator
 
 def printProgramParams():
@@ -29,7 +29,7 @@ packages = 0		#ilosc przesylanych pakietow														#
 percent = 0		#procent bledow																		#
 #--------------------------------PARAMETRY PROGRAMU--------------------------------#
 
-print("\n#-----------------------SYMULACJA-----------------------#\n")
+print("\n#-----------------------SYMULACJA SAW-----------------------#\n")
 
 printProgramParams()
 
@@ -49,4 +49,26 @@ errors = str(errors) + '/' + str(len(sawProtocol.sourceARQ.packages))
 
 print("\n<ARQ>\t\tFile sended.\n\t\t\tErrors: ", errors, "\t" + percent)
 
-print("\n\n#--------------------KONIEC SYMULACJI-------------------#\n")
+print("\n\n#----------------------KONIEC SYMULACJI---------------------#\n")
+
+print("\n#-----------------------SYMULACJA GBN-----------------------#\n")
+
+printProgramParams()
+
+#inicjalizacja dekoderow ARQ		
+sourceARQ = ARQModel()	#zrodlowy ARQ
+destARQ = ARQModel()	#docelowy ARQ
+noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs)
+gobackProtocol = GoBackProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
+
+gobackProtocol.prepareDecoders('wave.wav')
+gobackProtocol.transmit()
+
+errors = gobackProtocol.errors		#pobranie ilosci bledow
+packages = len(gobackProtocol.sourceARQ.packages) + 0.0		#pobranie liczby wyslanych pakietow
+percent = str( (errors/packages)*100) + '%'		#wyliczenie procentu bledow
+errors = str(errors) + '/' + str(len(gobackProtocol.sourceARQ.packages))
+
+print("\n<ARQ>\t\tFile sended.\n\t\t\tErrors: ", errors, "\t" + percent)
+
+print("\n\n#----------------------KONIEC SYMULACJI---------------------#\n")
