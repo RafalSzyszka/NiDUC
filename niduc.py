@@ -21,7 +21,12 @@ rfb = 100			#if rand(0, rfb) % pfb == 0														#
 rfs = 100			#if rand(0, rfs) % pfs == 0															#
 pfp = 200			#~2% na paczke																		#
 pfb = 10			#~10% na bit																				#
-pfs = 20			#~5% na bity kontrolne																#
+pfs = 20			#~5% na bity kontrolne
+rgw = 1000                      #if rand(0, rgw) % pgw == 0	
+rgg = 100                       #if rand(0, rgg) % pgg == 0	
+pgw = 10                       #~1% na rozpoczecie serii bledow
+pgg = 10                        #~10% na zakonczenie serii bledow
+toc = 0                        #typ wykorzystywanego kanalu 0 -BSC, 1-Gilberta, 2-BEC
 #-------------------------------------POZOSTALE-----------------------------------------#																														#
 bytes = 64		#ilosc bajtow w paczce																#
 errors = 0			#ilosc bledow podczas transmisji													#		
@@ -29,14 +34,14 @@ packages = 0		#ilosc przesylanych pakietow														#
 percent = 0		#procent bledow																		#
 #--------------------------------PARAMETRY PROGRAMU--------------------------------#
 
-print("\n#-----------------------SYMULACJA SAW-----------------------#\n")
+print("\n#-----------------------SYMULACJA-----------------------#\n")
 
 printProgramParams()
 
 #inicjalizacja dekoderow ARQ		
 sourceARQ = ARQModel()	#zrodlowy ARQ
 destARQ = ARQModel()	#docelowy ARQ
-noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs)
+noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc)
 sawProtocol = SAWProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
 
 sawProtocol.prepareDecoders('wave.wav')
@@ -49,7 +54,7 @@ errors = str(errors) + '/' + str(len(sawProtocol.sourceARQ.packages))
 
 print("\n<ARQ>\t\tFile sended.\n\t\t\tErrors: ", errors, "\t" + percent)
 
-print("\n\n#----------------------KONIEC SYMULACJI---------------------#\n")
+print("\n\n#--------------------KONIEC SYMULACJI-------------------#\n")
 
 print("\n#-----------------------SYMULACJA GBN-----------------------#\n")
 
@@ -58,7 +63,7 @@ printProgramParams()
 #inicjalizacja dekoderow ARQ		
 sourceARQ = ARQModel()	#zrodlowy ARQ
 destARQ = ARQModel()	#docelowy ARQ
-noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs)
+noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc)
 gobackProtocol = GoBackProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
 
 gobackProtocol.prepareDecoders('wave.wav')
