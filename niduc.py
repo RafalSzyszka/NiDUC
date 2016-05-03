@@ -44,7 +44,7 @@ printProgramParams()
 sourceARQ = ARQModel()  # zrodlowy ARQ
 destARQ = ARQModel()  # docelowy ARQ
 noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc)
-sawProtocol = SAWProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
+sawProtocol = SelectiveRepeatProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
 
 sawProtocol.prepareDecoders('wave.wav')
 sawProtocol.transmit()
