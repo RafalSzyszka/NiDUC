@@ -44,38 +44,17 @@ printProgramParams()
 sourceARQ = ARQModel()  # zrodlowy ARQ
 destARQ = ARQModel()  # docelowy ARQ
 noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc)
-sawProtocol = SelectiveRepeatProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
+protocol = SelectiveRepeatProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
 
-sawProtocol.prepareDecoders('wave.wav')
-sawProtocol.transmit()
+protocol.prepareDecoders('wave.wav')
+protocol.transmit()
 
-errors = sawProtocol.errors  # pobranie ilosci bledow
-packages = len(sawProtocol.sourceARQ.packages) + 0.0  # pobranie liczby wyslanych pakietow
+errors = protocol.errors  # pobranie ilosci bledow
+packages = len(protocol.sourceARQ.packages) + 0.0  # pobranie liczby wyslanych pakietow
 percent = str((errors / packages) * 100) + '%'  # wyliczenie procentu bledow
-errors = str(errors) + '/' + str(len(sawProtocol.sourceARQ.packages))
+errors = str(errors) + '/' + str(len(protocol.sourceARQ.packages))
 
 print("\n<ARQ>\t\tFile sended.\n\t\t\tErrors: ", errors, "\t" + percent)
+print("\t\tTotal errors: ", protocol.getTotalErrors())
 
 print("\n\n#--------------------KONIEC SYMULACJI-------------------#\n")
-
-print("\n#-----------------------SYMULACJA GBN-----------------------#\n")
-
-printProgramParams()
-
-# inicjalizacja dekoderow ARQ
-sourceARQ = ARQModel()  # zrodlowy ARQ
-destARQ = ARQModel()  # docelowy ARQ
-noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc)
-gobackProtocol = GoBackProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
-
-gobackProtocol.prepareDecoders('wave.wav')
-gobackProtocol.transmit()
-
-errors = gobackProtocol.errors  # pobranie ilosci bledow
-packages = len(gobackProtocol.sourceARQ.packages) + 0.0  # pobranie liczby wyslanych pakietow
-percent = str((errors / packages) * 100) + '%'  # wyliczenie procentu bledow
-errors = str(errors) + '/' + str(len(gobackProtocol.sourceARQ.packages))
-
-print("\n<ARQ>\t\tFile sended.\n\t\t\tErrors: ", errors, "\t" + percent)
-
-print("\n\n#----------------------KONIEC SYMULACJI---------------------#\n")
