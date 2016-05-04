@@ -71,6 +71,8 @@ class SAWProtocol:
         print("\n\t\t\t\tExporting to .wav...")
         self.destARQ.converttowave('receivedViaSAWProtocol.wav')
 
+    def getTotalErrors(self):
+        return self.noiseGenerator.totalErrors
 
 class GoBackProtocol:
     # potrzebne obiekty do wykonania symulacji!
@@ -158,6 +160,8 @@ class GoBackProtocol:
         print("\n\t\t\t\tAdding secure bytes...")
         self.sourceARQ.addevenbyte()  # dodanie bitow kontrolnych
 
+    def getTotalErrors(self):
+        return self.noiseGenerator.totalErrors
 
 class SelectiveRepeatProtocol:
     # potrzebne obiekty do wykonania symulacji!
@@ -250,6 +254,8 @@ class SelectiveRepeatProtocol:
         for i in range(0, len(self.sourceARQ.packages)):
             self.destARQ.packages.append(0)
 
+    def getTotalErrors(self):
+        return self.noiseGenerator.totalErrors
 
 class Bufor:
     bufor = None  # kolejka

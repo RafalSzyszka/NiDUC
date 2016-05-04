@@ -27,6 +27,10 @@ class NoiseGenerator:
     typeOfChannel = 0
     noiseFlag = 0
 
+    totalErrors = 0
+    bitsChange = 0
+    secureChange = 0
+
     def __init__(self, rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc):
         self.rangeForPack = rfp
         self.rangeForBit = rfb
@@ -108,7 +112,7 @@ class NoiseGenerator:
 
     def changeBits(self, damagedPack):
         string = ''  # przygotowanie miejsca na zaklocony pakiet
-
+        self.bitsChange = 0  # reset flagi zmiany w pakiecie
         for byte in damagedPack:  # wybieramy poszczegolne bajty z paczki
             for bit in byte:  # wybieramy poszczegolne bity z kazdego bajtu
                 # istnieje prawdopodobienstwo, ze bit zostanie zmieniony
@@ -116,11 +120,15 @@ class NoiseGenerator:
                 if (random.randint(0, self.rangeForBit) % self.probForBit == 0):
                     if (bit == '0'):
                         string += '1'  # zamiana 0->1
+                        self.bitsChange = 1;
                     else:
                         string += '0'  # zamiana 1->0
+                        self.bitsChange = 1;
                 else:
                     string += bit  # bez zmian
 
+        if (self.bitsChange == 1):
+            self.totalErrors += 1  # zwiekszenie ilosci wszystkich bledow
         return string
 
     def gilbertChannel(self, damagedPack):
@@ -154,9 +162,14 @@ class NoiseGenerator:
     def changeSecureBits(self, damagedPack, even, ones):
         # istnieje prawdopodobienstwo, ze bity kontrolne zostana zmienione
         # dereminuja to parametry 'probForSecure' oraz 'rangeForSecure'
+        self.secureChange = 0  # reset flagi zmiany w czesci zabezpieczen
         if (random.randint(0, self.rangeForSecure) % self.probForSecure == 0):
             even = random.randint(0, 1)
             ones = random.randint(0, 65536)
+            self.secureChange = 1
+
+        if (self.secureChange == 1 and self.bitsChange == 0):
+            self.totalErrors += 1  # jesli zmiany nie bylo w pakiecie ale byla w czesci zabezpieczen to dodaj blac
 
         damagedPack.append(even)
         damagedPack.append(ones)
