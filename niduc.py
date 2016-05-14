@@ -43,7 +43,7 @@ channelSpeed = 0.3  # szybkosc kanalu transmityjnego [0;99]
 # im wieksza liczba tym wolniejszy kanal
 
 windowSize = 5  # szerokosc okna dla GBN
-protocolType = 'GBN'    # SAW - Send And Wait, GBN - Go Back N, SR - Selective Repeat
+protocolType = 'SR'    # SAW - Send And Wait, GBN - Go Back N, SR - Selective Repeat
 # 																		#
 # --------------------------------PARAMETRY PROGRAMU--------------------------------#
 
