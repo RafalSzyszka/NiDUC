@@ -13,6 +13,8 @@ def printProgramParams():
     print("\t#--pfb = " + str(pfb) + "\tDeterminuje P(zaklocenie bitu)-----------#")
     print("\t#--pfs = " + str(pfs) + "\tDeterminuje P(zaklocenie bitu CRC)-------#")
     print("\t#--bytes = " + str(bytes) + "\tIlosc bajtow w pakietach-----------------#")
+    print("\t#--buffer = " + str(buffSize) + "\tWielkosc buforow w pakietach-------------#")
+    print("\t#--chSpd = " + str(int(100/(channelSpeed+1))) + "%\tSzybkosc kanalu--------------------------#")
     print("\t##########################################################\n\n")
 
 
@@ -21,19 +23,24 @@ def printProgramParams():
 rfp = 1000  # if rand(0, rfp) % pfp == 0														#
 rfb = 100  # if rand(0, rfb) % pfb == 0														#
 rfs = 100  # if rand(0, rfs) % pfs == 0															#
-pfp = 200  # ~2% na paczke																		#
+pfp = 100  # ~10% na paczke																		#
 pfb = 10  # ~10% na bit																				#
-pfs = 20  # ~5% na bity kontrolne
+pfs = 10  # ~10% na bity kontrolne
 rgw = 1000  # if rand(0, rgw) % pgw == 0
 rgg = 100  # if rand(0, rgg) % pgg == 0
 pgw = 10  # ~1% na rozpoczecie serii bledow
 pgg = 10  # ~10% na zakonczenie serii bledow
 toc = 0  # typ wykorzystywanego kanalu 0 -BSC, 1-Gilberta, 2-BEC
 # -------------------------------------POZOSTALE-----------------------------------------#																														#
-bytes = 64  # ilosc bajtow w paczce																#
+bytes = 320  # ilosc bajtow w paczce																#
 errors = 0  # ilosc bledow podczas transmisji													#
 packages = 0  # ilosc przesylanych pakietow														#
-percent = 0  # procent bledow																		#
+percent = 0  # procent bledow
+buffSize = 100     # wielkosc bufora
+channelSpeed = 0.3  # szybkosc kanalu transmityjnego [0;99]
+# 0 = maksymalna predkosc, 1 = 50% predkosci, 2 = 33%, 3 = 25%, 4 = 20%, 5 = ~16%, ..., 99 = 0%
+# im wieksza liczba tym wolniejszy kanal
+# 																		#
 # --------------------------------PARAMETRY PROGRAMU--------------------------------#
 
 print("\n#-----------------------SYMULACJA-----------------------#\n")
@@ -44,7 +51,7 @@ printProgramParams()
 sourceARQ = ARQModel()  # zrodlowy ARQ
 destARQ = ARQModel()  # docelowy ARQ
 noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc)
-protocol = SelectiveRepeatProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
+protocol = SelectiveRepeatProtocol(sourceARQ, destARQ, noiseGenerator, bytes, buffSize, channelSpeed)
 
 protocol.prepareDecoders('wave.wav')
 protocol.transmit()
