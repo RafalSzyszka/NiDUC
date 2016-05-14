@@ -77,9 +77,7 @@ class ARQModel:
 
     def countones(self, pack):  # liczy i dodaje bity kontrolne
         onesinpackage = 0
-        crcString = ''
         for byte in pack:  # dla kazdego bajtu w pakiecie
-            crcString += byte  # tworzenie stringa do wyliczenia crc
             for char in byte:  # dla kazdego bitu w bajcie
                 if (char == '1'):  # liczenie jedynek
                     onesinpackage += 1
@@ -89,8 +87,6 @@ class ARQModel:
         else:
             pack.append(0)
             pack.append(onesinpackage)
-
-        pack.append(self.countCRC(crcString))
 
         return pack
 
@@ -109,45 +105,32 @@ class ARQModel:
             self.packages.append(pack)
         return ack
 
-    def countCRC(self, string):
-        # liczy sume crc
-        crc32 = crcmod.mkCrcFun(0x104c11dbf, initCrc=0)
-        return bin(crc32(string))[2:]
-
     def checkPack(self, pack):
         onesinpackage = 0
         tocheck = [el for el in pack]  # kopia paczki, dla ulatwienia wykonywania operacji.
-        packCRC = tocheck.pop()   # CRC
         packones = tocheck.pop()  # ilosc jedynek w pakiecie
         packeven = tocheck.pop()  # bit parzystosci
-        crcString = ''
         for byte in tocheck:  # dla kazdego bajtu w pakiecie
-            crcString += byte
             for bit in byte:  # sprawdzanie kazdego bitu w kazdym bajcie
                 if (bit == '1'):  # liczenie jedynek
                     onesinpackage += 1
 
         # sprawdzenie poprawnosci pakietu
-        crc = self.countCRC(crcString)  # wyliczenie sumy kontrolnej
-        if(crc == packCRC):     # jesli sie zgadza sprawdz nastepne pola
-            if (onesinpackage == packones):  # porownanie ilosci jedynek w pakiecie
-                if (onesinpackage % 2 == 0):  # 1 jesli ilosc wystapien 1 jest parzysta, 0 wpp
-                    if (1 == packeven):  # jesli wyliczony na nowo bit parzystosci zgadza sie z odebranym, paczka zostala odebrana poprawnie
-                        pack.pop()  # usuniecie crc
-                        pack.pop()  # usuniecie bitow kontrolnych z pakietu
-                        pack.pop()
-                        return 'ack'  # odeslij potwierdzenie odebrania
-                    else:
-                        return 'nack'  # pakiet nie byl poprawny
+        if (onesinpackage == packones):  # porownanie ilosci jedynek w pakiecie
+            if (onesinpackage % 2 == 0):  # 1 jesli ilosc wystapien 1 jest parzysta, 0 wpp
+                if (1 == packeven):  # jesli wyliczony na nowo bit parzystosci zgadza sie z odebranym, paczka zostala odebrana poprawnie
+                     pack.pop()  # usuniecie crc
+                     pack.pop()  # usuniecie bitow kontrolnych z pakietu
+                     return 'ack'  # odeslij potwierdzenie odebrania
                 else:
-                    if (0 == packeven):
-                        pack.pop()  # usuniecie crc
-                        pack.pop()
-                        pack.pop()
-                        return 'ack'
-                    else:
-                        return 'nack'
+                    return 'nack'  # pakiet nie byl poprawny
             else:
-                return 'nack'
+                 if (0 == packeven):
+                     pack.pop()  # usuniecie crc
+                     pack.pop()
+                     return 'ack'
+                 else:
+                     return 'nack'
         else:
-            return 'nack'   #jesli sie nie zgadza nie sprawdzaj juz nic
+            return 'nack'
+

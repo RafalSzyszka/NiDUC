@@ -30,7 +30,6 @@ class NoiseGenerator:
     totalErrors = 0
     bitsChange = 0
     secureChange = 0
-    crcChange = 0
 
 
     def __init__(self, rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc):
@@ -59,7 +58,6 @@ class NoiseGenerator:
 
                 damagedPack = [byte for byte in pack]  # przekopiowanie pakietu
 
-                crc = damagedPack.pop()
                 ones = damagedPack.pop()  # pozbywamy sie bitow kontrolnych
                 even = damagedPack.pop()
 
@@ -67,7 +65,7 @@ class NoiseGenerator:
                 damagedPack = self.convertBitStringToPack(self.changeBits(damagedPack))
 
                 # przeklamanie bitow kontrolnych i zworcenie zakloconego pakietu
-                return self.changeSecureBits(damagedPack, even, ones, crc)
+                return self.changeSecureBits(damagedPack, even, ones)
 
             # istnieje duze prawdopodobienstwo ze pakiet nie zostanie zaklocony
             else:
@@ -82,7 +80,6 @@ class NoiseGenerator:
 
                         damagedPack = [byte for byte in pack]  # przekopiowanie pakietu
 
-                        crc = damagedPack.pop()
                         ones = damagedPack.pop()  # pozbywamy sie bitow kontrolnych
                         even = damagedPack.pop()
 
@@ -136,24 +133,6 @@ class NoiseGenerator:
             self.totalErrors += 1   # zwiekszenie ilosci wszystkich bledow
         return string
 
-    def changeCRC(self, crc):
-        string = ''
-        self.crcChange = 0  # reset flagi zmiany w crc
-        for bit in crc: # poszczegolne bity w crc
-            # istnieje prawdopodobienstwo, ze bit zostanie zmieniony
-            # dereminuja to parametry 'probForBit' oraz 'rangeForBit'
-            if (random.randint(0, self.rangeForBit) % self.probForBit == 0):
-                if (bit == '0'):
-                    string += '1'  # zamiana 0->1
-                    self.crcChange = 1
-                else:
-                    string += '0'  # zamiana 1->0
-                    self.crcChange = 1
-            else:
-                string += bit  # bez zmian
-
-        return string
-
     def gilbertChannel(self, damagedPack):
         string = ''  # przygotowanie miejsca na zaklocony pakiet
 
@@ -182,7 +161,7 @@ class NoiseGenerator:
                             string += '0'  # zamiana 1->0 
         return string
 
-    def changeSecureBits(self, damagedPack, even, ones, crc):
+    def changeSecureBits(self, damagedPack, even, ones):
         # istnieje prawdopodobienstwo, ze bity kontrolne zostana zmienione
         # dereminuja to parametry 'probForSecure' oraz 'rangeForSecure'
 
@@ -193,12 +172,9 @@ class NoiseGenerator:
             ones = random.randint(0, 65536)
             self.secureChange = 1
 
-            crc = self.changeCRC(crc)
-
-        if((self.secureChange == 1 or self.crcChange == 1) and self.bitsChange == 0):
-            self.totalErrors += 1   #jesli zmiany nie bylo w pakiecie ale byla w czesci zabezpieczen to dodaj blac
+        if((self.secureChange == 1) and self.bitsChange == 0):
+            self.totalErrors += 1   #jesli zmiany nie bylo w pakiecie ale byla w czesci zabezpieczen to dodaj blad
 
         damagedPack.append(even)
         damagedPack.append(ones)
-        damagedPack.append(crc)
         return damagedPack  # zwrocenie zakloconego pakietu
