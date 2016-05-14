@@ -7,13 +7,6 @@ import time
 
 
 # PROTOKOL: SEND AND WAIT!
-# Symulacja transmisji za pomoca protokolu SAW
-# Mozliwosc konfiguracji parametrow transmisji
-#
-# -----Parametry:
-#			bytes	-	ilosc bajtow na pakiet
-#			
-
 class SAWProtocol:
     # potrzebne obiekty do wykonania symulacji!
     sourceARQ = ARQModel()  # zrodlowy dekoder ARQ
@@ -83,8 +76,10 @@ class GoBackProtocol:
     bytes = 0  # ilosc bajtow na pakiet
     errors = 0  # wykryte bledy w transmisji
     bufferSize = 0 # wielkosc buforow
+    channelSpeed = 0    # szybkosc kanalu
+    windowSize = 0  # szerokosc okna
 
-    def __init__(self, sARQ, dARQ, nGen, n, bufSize):  # inicjalizacja protokolu
+    def __init__(self, sARQ, dARQ, nGen, n, bufSize, wSize, chSpd):  # inicjalizacja protokolu
         self.bufor = Bufor()
         self.sourceARQ = sARQ
         self.destARQ = dARQ
@@ -92,6 +87,8 @@ class GoBackProtocol:
         self.bytes = n
         self.errors = 0
         self.bufferSize = bufSize
+        self.channelSpeed = chSpd
+        self.windowSize = wSize
 
     def prepareDecoders(self, file):
         print("<ARQ>\t\tPreparing decoders:\n\n\t\t\tSynchronizing...")
@@ -111,27 +108,25 @@ class GoBackProtocol:
         lastSended = 0      # ostatnia wyslana paczka
 
         send = 0
-        while(lastSended < allPacks):   # dwie wysylam jedna odbieram, czyszcze bufor po jego zapelnieniu
-            if(send < self.bufferSize and lastSended < allPacks):     # zapelnianie bufora
-                sBuf.append(self.noiseGenerator.addNoise(self.sourceARQ.packages[lastSended]))
-                send += 1
-                lastSended += 1
+        while(lastSended < allPacks):   # zapelnia bufor wielkoscia okna
+            for i in range(0, self.windowSize):
                 if(send < self.bufferSize and lastSended < allPacks):     # zapelnianie bufora
                     sBuf.append(self.noiseGenerator.addNoise(self.sourceARQ.packages[lastSended]))
                     send += 1
                     lastSended += 1
 
-            if(send > 0 and send < self.bufferSize):       # proba odebrania paczki jesl bufor nie zostal zapelniony
-                ack = self.destARQ.receivepacks(sBuf[0])
-                sBuf = sBuf[1:]
-                send -= 1
-                if(ack == 'ack'):    # pomyslnie odebrano paczke
-                    lastReceived += 1
-                else:
-                    lastSended = lastReceived + 1   # powrot do miejsca bledu
-                    sBuf = []   # wyczyszczenie bufora
-                    send = 0
-                    self.errors += 1
+            for i in range(0, int(self.bufferSize/self.channelSpeed)):  # odbieranie okreslonej ilosci paczek
+                if(send > 0 and send < self.bufferSize):       # proba odebrania paczki jesl bufor nie zostal zapelniony
+                    ack = self.destARQ.receivepacks(sBuf[0])
+                    sBuf = sBuf[1:]
+                    send -= 1
+                    if(ack == 'ack'):    # pomyslnie odebrano paczke
+                        lastReceived += 1
+                    else:
+                        lastSended = lastReceived + 1   # powrot do miejsca bledu
+                        sBuf = []   # wyczyszczenie bufora
+                        send = 0
+                        self.errors += 1
 
             if(send == self.bufferSize):    # proba odebrania wszystkiego w buforze jesli ten jest pelny
                 for i in range(0, self.bufferSize):

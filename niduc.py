@@ -15,6 +15,7 @@ def printProgramParams():
     print("\t#--bytes = " + str(bytes) + "\tIlosc bajtow w pakietach-----------------#")
     print("\t#--buffer = " + str(buffSize) + "\tWielkosc buforow w pakietach-------------#")
     print("\t#--chSpd = " + str(int(100/(channelSpeed+1))) + "%\tSzybkosc kanalu--------------------------#")
+    print("\t#--window = " + str(windowSize) + "\tSzerokosc okna dla GBN-------------------#")
     print("\t##########################################################\n\n")
 
 
@@ -40,18 +41,26 @@ buffSize = 100     # wielkosc bufora
 channelSpeed = 0.3  # szybkosc kanalu transmityjnego [0;99]
 # 0 = maksymalna predkosc, 1 = 50% predkosci, 2 = 33%, 3 = 25%, 4 = 20%, 5 = ~16%, ..., 99 = 0%
 # im wieksza liczba tym wolniejszy kanal
+
+windowSize = 5  # szerokosc okna dla GBN
+protocolType = 'GBN'    # SAW - Send And Wait, GBN - Go Back N, SR - Selective Repeat
 # 																		#
 # --------------------------------PARAMETRY PROGRAMU--------------------------------#
 
 print("\n#-----------------------SYMULACJA-----------------------#\n")
-
+print("\t\tPROTOKOL:\t" + protocolType)
 printProgramParams()
 
 # inicjalizacja dekoderow ARQ
 sourceARQ = ARQModel()  # zrodlowy ARQ
 destARQ = ARQModel()  # docelowy ARQ
 noiseGenerator = NoiseGenerator(rfp, rfb, rfs, pfp, pfb, pfs, rgw, rgg, pgw, pgg, toc)
-protocol = SelectiveRepeatProtocol(sourceARQ, destARQ, noiseGenerator, bytes, buffSize, channelSpeed)
+if(protocolType == 'SAW'):
+    protocol = SAWProtocol(sourceARQ, destARQ, noiseGenerator, bytes)
+elif(protocolType == 'GBN'):
+    protocol = GoBackProtocol(sourceARQ, destARQ, noiseGenerator, bytes, buffSize, windowSize, channelSpeed)
+elif(protocolType == 'SR'):
+    protocol = SelectiveRepeatProtocol(sourceARQ, destARQ, noiseGenerator, bytes, buffSize, channelSpeed)
 
 protocol.prepareDecoders('wave.wav')
 protocol.transmit()
