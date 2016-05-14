@@ -33,7 +33,7 @@ pgw = 10  # ~1% na rozpoczecie serii bledow
 pgg = 10  # ~10% na zakonczenie serii bledow
 toc = 0  # typ wykorzystywanego kanalu 0 -BSC, 1-Gilberta, 2-BEC
 # -------------------------------------POZOSTALE-----------------------------------------#																														#
-bytes = 320  # ilosc bajtow w paczce																#
+bytes = 160  # ilosc bajtow w paczce																#
 errors = 0  # ilosc bledow podczas transmisji													#
 packages = 0  # ilosc przesylanych pakietow														#
 percent = 0  # procent bledow
@@ -43,7 +43,7 @@ channelSpeed = 0.3  # szybkosc kanalu transmityjnego [0;99]
 # im wieksza liczba tym wolniejszy kanal
 
 windowSize = 5  # szerokosc okna dla GBN
-protocolType = 'GBN'    # SAW - Send And Wait, GBN - Go Back N, SR - Selective Repeat
+protocolType = 'SR'    # SAW - Send And Wait, GBN - Go Back N, SR - Selective Repeat
 # 																		#
 # --------------------------------PARAMETRY PROGRAMU--------------------------------#
 
